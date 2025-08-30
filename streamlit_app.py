@@ -63,12 +63,15 @@ def load_sample_data():
     }
     
     # Sample performance data
+    assessment_titles = ['Quiz 1', 'Assignment 1', 'Project', 'Final Exam'] * 7 + ['Quiz 1', 'Assignment 1']
+    assessment_types = ['Quiz', 'Assignment', 'Project', 'Exam'] * 7 + ['Quiz', 'Assignment']
+    
     performance_data = {
         'performance_key': range(1, 31),
         'student_name': [f'Student_{np.random.randint(1, 21)}' for _ in range(30)],
         'course_title': np.random.choice(['Python Basics', 'Data Analysis', 'Web Design', 'Business Strategy', 'Digital Marketing'], 30),
-        'assessment_title': ['Quiz 1', 'Assignment 1', 'Project', 'Final Exam'] * 8 - ['Quiz 1', 'Assignment 1'],
-        'assessment_type': ['Quiz', 'Assignment', 'Project', 'Exam'] * 8 - ['Quiz', 'Assignment'],
+        'assessment_title': assessment_titles,
+        'assessment_type': assessment_types,
         'difficulty_level': np.random.choice(['Easy', 'Medium', 'Hard'], 30),
         'score_earned': np.random.uniform(60, 100, 30),
         'max_score': [100] * 30,
