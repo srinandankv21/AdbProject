@@ -47,19 +47,21 @@ def load_sample_data():
     """Load sample data that matches your fact constellation schema"""
     
     # Sample enrollment data
+    np.random.seed(42)  # For reproducible results
+    
     enrollment_data = {
-        'enrollment_key': range(1, 21),
+        'enrollment_key': list(range(1, 21)),
         'student_name': [f'Student_{i}' for i in range(1, 21)],
-        'course_title': ['Python Basics', 'Data Analysis', 'Web Design', 'Business Strategy', 'Digital Marketing'] * 4,
-        'category_name': ['Programming', 'Data Science', 'Design', 'Business', 'Marketing'] * 4,
-        'instructor_name': ['Dr. Smith', 'Prof. Johnson', 'Ms. Lee', 'Mr. Brown', 'Dr. Wilson'] * 4,
-        'membership_type': ['Premium', 'Free'] * 10,
+        'course_title': (['Python Basics', 'Data Analysis', 'Web Design', 'Business Strategy', 'Digital Marketing'] * 4),
+        'category_name': (['Programming', 'Data Science', 'Design', 'Business', 'Marketing'] * 4),
+        'instructor_name': (['Dr. Smith', 'Prof. Johnson', 'Ms. Lee', 'Mr. Brown', 'Dr. Wilson'] * 4),
+        'membership_type': (['Premium', 'Free'] * 10),
         'enrollment_date': pd.date_range('2024-01-01', periods=20, freq='W'),
-        'course_price': [99.99, 149.99, 79.99, 199.99, 89.99] * 4,
-        'progress_percentage': np.random.uniform(20, 100, 20),
-        'completion_status': np.random.choice(['Completed', 'In Progress', 'Enrolled'], 20),
-        'course_level': ['Beginner', 'Intermediate', 'Advanced'] * 7 + ['Beginner'],
-        'days_to_complete': np.random.randint(15, 90, 20)
+        'course_price': ([99.99, 149.99, 79.99, 199.99, 89.99] * 4),
+        'progress_percentage': np.random.uniform(20, 100, 20).tolist(),
+        'completion_status': np.random.choice(['Completed', 'In Progress', 'Enrolled'], 20).tolist(),
+        'course_level': (['Beginner', 'Intermediate', 'Advanced'] * 6 + ['Beginner', 'Intermediate']),
+        'days_to_complete': np.random.randint(15, 90, 20).tolist()
     }
     
     # Sample performance data
