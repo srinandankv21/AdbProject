@@ -415,6 +415,16 @@ def show_integrated_analysis(enrollment_df, performance_df):
         fig = px.bar(success_rates, x='MembershipType', y='SuccessRate', title='Success Rate by Membership')
         st.plotly_chart(fig, use_container_width=True)
 
+def show_schema_diagram():
+    """Tab 5: Display the fact constellation schema diagram"""
+    st.header("🏗️ Fact Constellation Schema Diagram")
+    
+    # Try to load the image
+    try:
+        st.image("fact_constellation.png", use_container_width=True)
+    except:
+        st.error("Could not load fact_constellation.png. Please make sure the file exists in the same directory.")
+
 def main():
     # Main title
     st.markdown("<h1 class='main-header'>🎓 EduSkillUp Analytics Dashboard</h1>", unsafe_allow_html=True)
@@ -470,6 +480,7 @@ def main():
         "📈 Enrollment Dashboard", 
         "🎓 Performance Dashboard", 
         "🔗 Integrated Analysis"
+        "🏗️ Schema Diagram"  # New tab
     ])
     
     with tab1:
@@ -483,6 +494,9 @@ def main():
     
     with tab4:
         show_integrated_analysis(filtered_enrollment, filtered_performance)
+
+    with tab5:
+        show_schema_diagram()
     
     # Footer
     st.markdown("---")
