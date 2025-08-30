@@ -479,7 +479,7 @@ def main():
         "🔍 Data Explorer", 
         "📈 Enrollment Dashboard", 
         "🎓 Performance Dashboard", 
-        "🔗 Integrated Analysis"
+        "🔗 Integrated Analysis",
         "🏗️ Schema Diagram"  # New tab
     ])
     
