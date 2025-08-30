@@ -475,7 +475,7 @@ def main():
     filtered_performance = filter_data(performance_df, 'SubmissionDate', date_range, categories, membership_types)
     
     # Navigation tabs
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🔍 Data Explorer", 
         "📈 Enrollment Dashboard", 
         "🎓 Performance Dashboard", 
