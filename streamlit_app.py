@@ -180,13 +180,19 @@ def create_sidebar_filters(enrollment_df, performance_df):
     
     st.sidebar.header("📊 Dashboard Filters")
     
-    # Date range filter
-    if len(enrollment_df) > 0:
-        min_date = enrollment_df['EnrollmentDate'].min()
-        max_date = enrollment_df['EnrollmentDate'].max()
+    # Extract date from EnrollmentDateKey (20250829 format)
+    if len(enrollment_df) > 0 and 'EnrollmentDate' in enrollment_df.columns:
+        # Convert to proper datetime
+        enrollment_dates = pd.to_datetime(enrollment_df['EnrollmentDate'])
+        min_date = enrollment_dates.min()
+        max_date = enrollment_dates.max()
+        
+        st.sidebar.info(f"📅 Data range: {min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}")
     else:
-        min_date = datetime(2024, 1, 1)
-        max_date = datetime(2024, 12, 31)
+        # Fallback: your data is from August 29, 2024
+        min_date = pd.to_datetime('2024-08-29')
+        max_date = pd.to_datetime('2024-08-29')
+        st.sidebar.info("📅 Your data is from: August 29, 2024")
 
     date_range = st.sidebar.date_input(
         "Select Date Range",
@@ -201,28 +207,25 @@ def create_sidebar_filters(enrollment_df, performance_df):
     elif len(date_range) == 0:
         date_range = (min_date, max_date)
     
-    # Category filter
+    # Rest of the filters...
     categories = st.sidebar.multiselect(
         "Select Categories",
         options=enrollment_df['CategoryName'].unique(),
         default=enrollment_df['CategoryName'].unique()
     )
     
-    # Membership filter
     membership_types = st.sidebar.multiselect(
         "Select Membership Types",
         options=enrollment_df['MembershipType'].unique(),
         default=enrollment_df['MembershipType'].unique()
     )
     
-    # Course level filter
     course_levels = st.sidebar.multiselect(
         "Select Course Levels",
         options=enrollment_df['CourseLevel'].unique(),
         default=enrollment_df['CourseLevel'].unique()
     )
     
-    # Completion status filter
     completion_statuses = st.sidebar.multiselect(
         "Select Completion Status",
         options=enrollment_df['CompletionStatus'].unique(),
@@ -230,7 +233,6 @@ def create_sidebar_filters(enrollment_df, performance_df):
     )
     
     return date_range, categories, membership_types, course_levels, completion_statuses
-
 def filter_data(df, date_col, date_range, categories, membership_types=None, course_levels=None, completion_statuses=None):
     """Apply filters to dataframe"""
     
