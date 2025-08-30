@@ -25,6 +25,9 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
+    .data-table {
+        font-size: 0.8rem;
+    }
     .kpi-container {
         background-color: #f0f2f6;
         padding: 1rem;
@@ -40,160 +43,184 @@ st.markdown("""
 # Initialize session state for data
 if 'data_loaded' not in st.session_state:
     st.session_state.data_loaded = False
-
-def get_file_path(filename):
-    """Get the correct file path for Streamlit deployment"""
-    try:
-        # Try to find the file in the current directory
-        if os.path.exists(filename):
-            return filename
-        # Try to find in a 'data' subdirectory
-        data_path = os.path.join('data', filename)
-        if os.path.exists(data_path):
-            return data_path
-        # For Streamlit sharing, files might be in root
-        return filename
-    except:
-        return filename
+if 'raw_data_loaded' not in st.session_state:
+    st.session_state.raw_data_loaded = False
 
 @st.cache_data
-def load_data_from_csv():
-    """Load data from CSV files with better error handling"""
-    
+def load_raw_data_from_csv():
+    """Load raw CSV files without any processing"""
     try:
-        # First, let's check what files are actually available
-        import os
-        available_files = [f for f in os.listdir('.') if f.endswith('.csv')]
-        st.sidebar.info(f"Available CSV files: {available_files}")
-        
-        # Try to load each file with multiple path options
+        raw_data = {}
         csv_files = {
-            'DimStudent.csv': None,
-            'DimDate.csv': None, 
-            'DimAssessment.csv': None,
-            'DimCategory.csv': None,
-            'DimCourse.csv': None,
-            'DimInstructor.csv': None,
-            'FactEnrollment.csv': None,
-            'FactAssessmentPerformance.csv': None
+            'DimStudent': 'DimStudent.csv',
+            'DimDate': 'DimDate.csv',
+            'DimAssessment': 'DimAssessment.csv',
+            'DimCategory': 'DimCategory.csv',
+            'DimCourse': 'DimCourse.csv',
+            'DimInstructor': 'DimInstructor.csv',
+            'FactEnrollment': 'FactEnrollment.csv',
+            'FactAssessmentPerformance': 'FactAssessmentPerformance.csv'
         }
         
-        # Try to load each file
-        for file_name in csv_files.keys():
+        for name, file in csv_files.items():
             try:
-                if file_name in available_files:
-                    if file_name in ['DimStudent.csv', 'DimDate.csv', 'DimCourse.csv']:
-                        csv_files[file_name] = pd.read_csv(file_name, parse_dates=True, dayfirst=True, infer_datetime_format=True)
-                    else:
-                        csv_files[file_name] = pd.read_csv(file_name)
-                    st.sidebar.success(f"✅ Loaded {file_name}")
+                if name in ['DimStudent', 'DimDate', 'DimCourse']:
+                    raw_data[name] = pd.read_csv(file, parse_dates=True, dayfirst=True, infer_datetime_format=True)
                 else:
-                    st.sidebar.warning(f"❌ {file_name} not found")
+                    raw_data[name] = pd.read_csv(file)
+                st.sidebar.success(f"✅ {name} loaded")
             except Exception as e:
-                st.sidebar.error(f"Error loading {file_name}: {str(e)}")
+                st.sidebar.error(f"❌ Error loading {name}: {str(e)}")
+                return None
         
-        # Check if we have the essential files
-        if csv_files['DimStudent.csv'] is None or csv_files['FactEnrollment.csv'] is None:
-            st.error("Essential files missing. Using sample data.")
-            return load_sample_data()
+        return raw_data
         
-        # Let's see what columns we actually have
-        st.sidebar.write("DimStudent columns:", list(csv_files['DimStudent.csv'].columns))
-        st.sidebar.write("FactEnrollment columns:", list(csv_files['FactEnrollment.csv'].columns))
+    except Exception as e:
+        st.error(f"Critical error loading raw data: {str(e)}")
+        return None
+
+@st.cache_data
+def process_data_for_analysis(raw_data):
+    """Process raw data into analysis-ready format"""
+    if not raw_data:
+        return None, None
+    
+    try:
+        # Process enrollment data
+        enrollment_df = raw_data['FactEnrollment'].merge(
+            raw_data['DimStudent'][['StudentKey', 'StudentName', 'MembershipType']], 
+            on='StudentKey', how='left'
+        ).merge(
+            raw_data['DimCourse'][['CourseKey', 'CourseTitle', 'Level']], 
+            on='CourseKey', how='left'
+        ).merge(
+            raw_data['DimInstructor'][['InstructorKey', 'InstructorName']], 
+            on='InstructorKey', how='left'
+        ).merge(
+            raw_data['DimCategory'][['CategoryKey', 'CategoryName']], 
+            on='CategoryKey', how='left'
+        )
         
-        # For now, let's just work with basic data without complex joins
-        enrollment_df = csv_files['FactEnrollment.csv'].copy()
-        performance_df = csv_files['FactAssessmentPerformance.csv'].copy()
+        # Process performance data
+        performance_df = raw_data['FactAssessmentPerformance'].merge(
+            raw_data['DimStudent'][['StudentKey', 'StudentName']], 
+            on='StudentKey', how='left'
+        ).merge(
+            raw_data['DimCourse'][['CourseKey', 'CourseTitle']], 
+            on='CourseKey', how='left'
+        ).merge(
+            raw_data['DimAssessment'][['AssessmentKey', 'AssessmentTitle', 'AssessmentType', 'DifficultyLevel', 'MaxScore']], 
+            on='AssessmentKey', how='left'
+        )
         
-        # Add basic student info if available
-        if csv_files['DimStudent.csv'] is not None:
-            student_map = csv_files['DimStudent.csv'][['StudentKey', 'StudentName', 'MembershipType']]
-            enrollment_df = enrollment_df.merge(student_map, on='StudentKey', how='left')
+        # Convert date keys to actual dates
+        date_map = raw_data['DimDate'].set_index('DateKey')['FullDate']
         
-        if csv_files['DimCourse.csv'] is not None:
-            course_map = csv_files['DimCourse.csv'][['CourseKey', 'CourseTitle', 'Level']]
-            enrollment_df = enrollment_df.merge(course_map, on='CourseKey', how='left')
-            performance_df = performance_df.merge(course_map, on='CourseKey', how='left')
+        enrollment_df['EnrollmentDate'] = enrollment_df['EnrollmentDateKey'].map(date_map)
+        enrollment_df['CompletionDate'] = enrollment_df['CompletionDateKey'].map(date_map)
+        performance_df['SubmissionDate'] = performance_df['SubmissionDateKey'].map(date_map)
         
-        # Simple date handling - convert DateKey to datetime
-        try:
-            enrollment_df['EnrollmentDate'] = pd.to_datetime(enrollment_df['EnrollmentDateKey'].astype(str), format='%Y%m%d')
-            enrollment_df['CompletionDate'] = pd.to_datetime(enrollment_df['CompletionDateKey'].astype(str), format='%Y%m%d', errors='coerce')
-            performance_df['SubmissionDate'] = pd.to_datetime(performance_df['SubmissionDateKey'].astype(str), format='%Y%m%d')
-        except:
-            st.sidebar.warning("Could not convert date keys. Using sample dates.")
-            enrollment_df['EnrollmentDate'] = pd.date_range('2024-08-29', periods=len(enrollment_df))
-            performance_df['SubmissionDate'] = pd.date_range('2024-08-29', periods=len(performance_df))
-        
-        # Calculate score percentage
+        # Calculate derived fields
         performance_df['ScorePercentage'] = (performance_df['ScoreEarned'] / performance_df['MaxPossibleScore']) * 100
+        enrollment_df['CourseLevel'] = enrollment_df['Level']
         
-        st.sidebar.success(f"✅ Successfully loaded {len(enrollment_df)} enrollments and {len(performance_df)} assessments")
+        # Select final columns
+        enrollment_df = enrollment_df[[
+            'EnrollmentKey', 'StudentName', 'CourseTitle', 'CategoryName', 'InstructorName',
+            'MembershipType', 'EnrollmentDate', 'CompletionDate', 'CoursePrice', 
+            'ProgressPercentage', 'DaysToComplete', 'CompletionStatus', 'PaymentStatus', 'CourseLevel'
+        ]]
+        
+        performance_df = performance_df[[
+            'PerformanceKey', 'StudentName', 'CourseTitle', 'AssessmentTitle', 
+            'AssessmentType', 'DifficultyLevel', 'ScoreEarned', 'MaxPossibleScore',
+            'ScorePercentage', 'TimeSpentMinutes', 'AttemptsCount', 'SubmissionDate', 'IsCompleted'
+        ]].rename(columns={'MaxPossibleScore': 'MaxScore'})
+        
         return enrollment_df, performance_df
         
     except Exception as e:
-        st.error(f"Critical error loading data: {str(e)}")
-        return load_sample_data()
+        st.error(f"Error processing data: {str(e)}")
+        return None, None
+
 @st.cache_data
-def load_sample_data():
-    """Fallback sample data if CSV loading fails"""
+def create_sample_data():
+    """Create comprehensive sample data"""
     np.random.seed(42)
     
+    # Sample data that matches your schema exactly
     enrollment_data = {
-        'EnrollmentKey': list(range(1, 21)),
-        'StudentName': [f'Student_{i}' for i in range(1, 21)],
-        'CourseTitle': (['Python Basics', 'Data Analysis', 'Web Design', 'Business Strategy', 'Digital Marketing'] * 4),
-        'CategoryName': (['Programming', 'Data Science', 'Design', 'Business', 'Marketing'] * 4),
-        'InstructorName': (['Dr. Smith', 'Prof. Johnson', 'Ms. Lee', 'Mr. Brown', 'Dr. Wilson'] * 4),
-        'MembershipType': (['Premium', 'Free'] * 10),
-        'EnrollmentDate': pd.date_range('2024-01-01', periods=20, freq='W'),
-        'CoursePrice': ([99.99, 149.99, 79.99, 199.99, 89.99] * 4),
-        'ProgressPercentage': np.random.uniform(20, 100, 20).tolist(),
-        'CompletionStatus': np.random.choice(['Completed', 'In Progress', 'Dropped'], 20).tolist(),
-        'CourseLevel': (['Beginner', 'Intermediate', 'Advanced'] * 6 + ['Beginner', 'Intermediate']),
-        'DaysToComplete': np.random.randint(15, 90, 20).tolist()
+        'EnrollmentKey': range(1, 101),
+        'StudentKey': np.random.randint(1, 51, 100),
+        'CourseKey': np.random.randint(1, 16, 100),
+        'InstructorKey': np.random.randint(1, 11, 100),
+        'CategoryKey': np.random.randint(1, 11, 100),
+        'EnrollmentDateKey': [20250829] * 100,
+        'CompletionDateKey': np.random.choice([20250829, 20250915, 20251001, None], 100, p=[0.4, 0.3, 0.2, 0.1]),
+        'EnrollmentCount': [1] * 100,
+        'CoursePrice': np.random.uniform(100, 900, 100).round(2),
+        'ProgressPercentage': np.random.uniform(0, 100, 100).round(2),
+        'DaysToComplete': np.random.choice([None, 30, 60, 90], 100, p=[0.3, 0.3, 0.2, 0.2]),
+        'CompletionStatus': np.random.choice(['Completed', 'In Progress', 'Dropped'], 100, p=[0.6, 0.3, 0.1]),
+        'PaymentStatus': np.random.choice(['Paid', 'Pending', 'Failed'], 100, p=[0.7, 0.2, 0.1])
     }
     
     performance_data = {
-        'PerformanceKey': range(1, 31),
-        'StudentName': [f'Student_{np.random.randint(1, 21)}' for _ in range(30)],
-        'CourseTitle': np.random.choice(['Python Basics', 'Data Analysis', 'Web Design', 'Business Strategy', 'Digital Marketing'], 30),
-        'AssessmentTitle': ['Quiz 1', 'Assignment 1', 'Project', 'Final Exam'] * 7 + ['Quiz 1', 'Assignment 1'],
-        'AssessmentType': ['Quiz', 'Assignment', 'Project', 'Exam'] * 7 + ['Quiz', 'Assignment'],
-        'DifficultyLevel': np.random.choice(['Easy', 'Medium', 'Hard'], 30),
-        'ScoreEarned': np.random.uniform(60, 100, 30),
-        'MaxScore': [100] * 30,
-        'TimeSpentMinutes': np.random.randint(15, 180, 30),
-        'AttemptsCount': np.random.randint(1, 4, 30),
-        'SubmissionDate': pd.date_range('2024-01-15', periods=30, freq='5D')
+        'PerformanceKey': range(1, 151),
+        'StudentKey': np.random.randint(1, 51, 150),
+        'CourseKey': np.random.randint(1, 16, 150),
+        'AssessmentKey': np.random.randint(1, 31, 150),
+        'SubmissionDateKey': [20250829] * 150,
+        'SubmissionCount': np.random.randint(1, 4, 150),
+        'ScoreEarned': np.random.uniform(50, 200, 150).round(2),
+        'MaxPossibleScore': np.random.choice([100, 150, 200], 150),
+        'TimeSpentMinutes': np.random.randint(10, 4000, 150),
+        'AttemptsCount': np.random.randint(1, 5, 150),
+        'IsCompleted': np.random.choice([True, False], 150, p=[0.8, 0.2])
     }
+    
+    # Create dimension data
+    students = [f'Student_{i:02d}' for i in range(1, 51)]
+    courses = [f'Course_{i:02d}' for i in range(1, 16)]
+    categories = [f'Category_{i:02d}' for i in range(1, 11)]
+    instructors = [f'Instructor_{i:02d}' for i in range(1, 11)]
+    assessments = [f'Assessment_{i:02d}' for i in range(1, 31)]
     
     enrollment_df = pd.DataFrame(enrollment_data)
     performance_df = pd.DataFrame(performance_data)
-    performance_df['ScorePercentage'] = (performance_df['ScoreEarned'] / performance_df['MaxScore']) * 100
+    
+    # Add dimension information
+    enrollment_df['StudentName'] = enrollment_df['StudentKey'].apply(lambda x: students[x-1] if x <= len(students) else f'Student_{x}')
+    enrollment_df['CourseTitle'] = enrollment_df['CourseKey'].apply(lambda x: courses[x-1] if x <= len(courses) else f'Course_{x}')
+    enrollment_df['CategoryName'] = enrollment_df['CategoryKey'].apply(lambda x: categories[x-1] if x <= len(categories) else f'Category_{x}')
+    enrollment_df['InstructorName'] = enrollment_df['InstructorKey'].apply(lambda x: instructors[x-1] if x <= len(instructors) else f'Instructor_{x}')
+    enrollment_df['MembershipType'] = np.random.choice(['Premium', 'Standard', 'Basic'], 100)
+    enrollment_df['CourseLevel'] = np.random.choice(['Beginner', 'Intermediate', 'Advanced'], 100)
+    
+    performance_df['StudentName'] = performance_df['StudentKey'].apply(lambda x: students[x-1] if x <= len(students) else f'Student_{x}')
+    performance_df['CourseTitle'] = performance_df['CourseKey'].apply(lambda x: courses[x-1] if x <= len(courses) else f'Course_{x}')
+    performance_df['AssessmentTitle'] = performance_df['AssessmentKey'].apply(lambda x: assessments[x-1] if x <= len(assessments) else f'Assessment_{x}')
+    performance_df['AssessmentType'] = np.random.choice(['Quiz', 'Assignment', 'Exam', 'Project'], 150)
+    performance_df['DifficultyLevel'] = np.random.choice(['Easy', 'Medium', 'Hard'], 150)
+    
+    # Convert dates
+    enrollment_df['EnrollmentDate'] = pd.to_datetime('2024-08-29')
+    enrollment_df['CompletionDate'] = pd.to_datetime(enrollment_df['CompletionDateKey'], format='%Y%m%d', errors='coerce')
+    performance_df['SubmissionDate'] = pd.to_datetime('2024-08-29')
+    
+    # Calculate score percentage
+    performance_df['ScorePercentage'] = (performance_df['ScoreEarned'] / performance_df['MaxPossibleScore']) * 100
     
     return enrollment_df, performance_df
 
 def create_sidebar_filters(enrollment_df, performance_df):
-    """Create sidebar filters for dashboard interactivity"""
-    
+    """Create sidebar filters"""
     st.sidebar.header("📊 Dashboard Filters")
     
-    # Debug: Check if we have data
-    if len(enrollment_df) == 0:
-        st.sidebar.warning("No enrollment data loaded")
-        return (pd.Timestamp('2024-08-29'), pd.Timestamp('2024-08-29')), [], [], [], []
+    # Date range filter
+    min_date = enrollment_df['EnrollmentDate'].min()
+    max_date = enrollment_df['EnrollmentDate'].max()
     
-    # Extract date from data
-    try:
-        min_date = enrollment_df['EnrollmentDate'].min()
-        max_date = enrollment_df['EnrollmentDate'].max()
-        st.sidebar.info(f"📅 Data range: {min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}")
-    except:
-        min_date = pd.to_datetime('2024-08-29')
-        max_date = pd.to_datetime('2024-08-29')
-        st.sidebar.info("📅 Your data is from: August 29, 2024")
-
     date_range = st.sidebar.date_input(
         "Select Date Range",
         value=(min_date, max_date),
@@ -201,450 +228,207 @@ def create_sidebar_filters(enrollment_df, performance_df):
         max_value=max_date
     )
     
-    # Handle single date selection
     if len(date_range) == 1:
         date_range = (date_range[0], date_range[0])
-    elif len(date_range) == 0:
-        date_range = (min_date, max_date)
     
-    # Get unique values for filters (with fallbacks)
-    try:
-        categories = enrollment_df['CategoryName'].unique().tolist()
-    except:
-        categories = []
+    # Other filters
+    categories = st.sidebar.multiselect(
+        "Select Categories",
+        options=enrollment_df['CategoryName'].unique(),
+        default=enrollment_df['CategoryName'].unique()
+    )
     
-    try:
-        membership_types = enrollment_df['MembershipType'].unique().tolist()
-    except:
-        membership_types = []
+    membership_types = st.sidebar.multiselect(
+        "Select Membership Types",
+        options=enrollment_df['MembershipType'].unique(),
+        default=enrollment_df['MembershipType'].unique()
+    )
     
-    try:
-        course_levels = enrollment_df['CourseLevel'].unique().tolist()
-    except:
-        course_levels = []
-    
-    try:
-        completion_statuses = enrollment_df['CompletionStatus'].unique().tolist()
-    except:
-        completion_statuses = []
-    
-    # Create filters only if we have options
-    if categories:
-        selected_categories = st.sidebar.multiselect(
-            "Select Categories",
-            options=categories,
-            default=categories
-        )
-    else:
-        selected_categories = []
-        st.sidebar.warning("No categories available")
-    
-    if membership_types:
-        selected_membership_types = st.sidebar.multiselect(
-            "Select Membership Types",
-            options=membership_types,
-            default=membership_types
-        )
-    else:
-        selected_membership_types = []
-        st.sidebar.warning("No membership types available")
-    
-    if course_levels:
-        selected_course_levels = st.sidebar.multiselect(
-            "Select Course Levels",
-            options=course_levels,
-            default=course_levels
-        )
-    else:
-        selected_course_levels = []
-        st.sidebar.warning("No course levels available")
-    
-    if completion_statuses:
-        selected_completion_statuses = st.sidebar.multiselect(
-            "Select Completion Status",
-            options=completion_statuses,
-            default=completion_statuses
-        )
-    else:
-        selected_completion_statuses = []
-        st.sidebar.warning("No completion statuses available")
-    
-    return date_range, selected_categories, selected_membership_types, selected_course_levels, selected_completion_statuses
-def filter_data(df, date_col, date_range, categories, membership_types=None, course_levels=None, completion_statuses=None):
+    return date_range, categories, membership_types
+
+def filter_data(df, date_col, date_range, categories=None, membership_types=None):
     """Apply filters to dataframe"""
-    
-    if len(df) == 0:
-        return df
-    
-    # Start with original dataframe
     filtered_df = df.copy()
     
     # Date filter
-    try:
-        filtered_df = filtered_df[
-            (filtered_df[date_col] >= pd.Timestamp(date_range[0])) & 
-            (filtered_df[date_col] <= pd.Timestamp(date_range[1]))
-        ]
-    except:
-        pass  # Skip date filtering if it fails
+    filtered_df = filtered_df[
+        (filtered_df[date_col] >= pd.Timestamp(date_range[0])) & 
+        (filtered_df[date_col] <= pd.Timestamp(date_range[1]))
+    ]
     
     # Category filter
     if categories and 'CategoryName' in filtered_df.columns:
-        try:
-            filtered_df = filtered_df[filtered_df['CategoryName'].isin(categories)]
-        except:
-            pass
+        filtered_df = filtered_df[filtered_df['CategoryName'].isin(categories)]
     
     # Membership filter
     if membership_types and 'MembershipType' in filtered_df.columns:
-        try:
-            filtered_df = filtered_df[filtered_df['MembershipType'].isin(membership_types)]
-        except:
-            pass
-    
-    # Course level filter
-    if course_levels and 'CourseLevel' in filtered_df.columns:
-        try:
-            filtered_df = filtered_df[filtered_df['CourseLevel'].isin(course_levels)]
-        except:
-            pass
-    
-    # Completion status filter
-    if completion_statuses and 'CompletionStatus' in filtered_df.columns:
-        try:
-            filtered_df = filtered_df[filtered_df['CompletionStatus'].isin(completion_statuses)]
-        except:
-            pass
+        filtered_df = filtered_df[filtered_df['MembershipType'].isin(membership_types)]
     
     return filtered_df
-def enrollment_dashboard(enrollment_df):
-    """Enrollment Dashboard - Strategic Business Intelligence"""
+
+def show_data_explorer_tab(raw_data, enrollment_df, performance_df):
+    """Tab 1: Data Explorer - Show raw and processed data"""
+    st.header("🔍 Data Explorer - Fact Constellation Verification")
     
-    if len(enrollment_df) == 0:
-        st.warning("No enrollment data available for the selected filters.")
-        return
+    col1, col2 = st.columns(2)
     
-    st.markdown("<h2 style='color: #1f77b4;'>📈 Enrollment Dashboard - Strategic Business Intelligence</h2>", unsafe_allow_html=True)
+    with col1:
+        st.subheader("📊 Dimension Tables")
+        dim_option = st.selectbox("Select Dimension Table", 
+                                list(raw_data.keys()) if raw_data else [])
+        if raw_data and dim_option:
+            st.dataframe(raw_data[dim_option], use_container_width=True)
+            st.info(f"Shape: {raw_data[dim_option].shape}")
+    
+    with col2:
+        st.subheader("📈 Fact Tables")
+        fact_option = st.selectbox("Select Fact Table", 
+                                 ['FactEnrollment', 'FactAssessmentPerformance'])
+        if raw_data and fact_option in raw_data:
+            st.dataframe(raw_data[fact_option], use_container_width=True)
+            st.info(f"Shape: {raw_data[fact_option].shape}")
+    
+    st.subheader("🔄 Processed Data for Analysis")
+    
+    tab1, tab2 = st.tabs(["Enrollment Data", "Performance Data"])
+    
+    with tab1:
+        st.dataframe(enrollment_df, use_container_width=True)
+        st.info(f"Processed Enrollment Data: {enrollment_df.shape}")
+        
+    with tab2:
+        st.dataframe(performance_df, use_container_width=True)
+        st.info(f"Processed Performance Data: {performance_df.shape}")
+    
+    # Schema information
+    st.subheader("🏗️ Schema Information")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Enrollment Fact Schema:**")
+        for col in enrollment_df.columns:
+            st.write(f"- {col}: {enrollment_df[col].dtype}")
+    
+    with col2:
+        st.write("**Performance Fact Schema:**")
+        for col in performance_df.columns:
+            st.write(f"- {col}: {performance_df[col].dtype}")
+
+def show_enrollment_dashboard(enrollment_df):
+    """Tab 2: Enrollment Dashboard"""
+    st.header("📈 Enrollment Dashboard")
     
     # KPI Row
     col1, col2, col3, col4 = st.columns(4)
+    with col1: st.metric("Total Enrollments", len(enrollment_df))
+    with col2: st.metric("Total Revenue", f"${enrollment_df['CoursePrice'].sum():,.2f}")
+    with col3: st.metric("Avg Progress", f"{enrollment_df['ProgressPercentage'].mean():.1f}%")
+    with col4: st.metric("Completion Rate", f"{(enrollment_df['CompletionStatus'] == 'Completed').mean()*100:.1f}%")
     
-    with col1:
-        total_enrollments = len(enrollment_df)
-        st.metric("Total Enrollments", f"{total_enrollments:,}")
-    
-    with col2:
-        total_revenue = enrollment_df['CoursePrice'].sum()
-        st.metric("Total Revenue", f"${total_revenue:,.2f}")
-    
-    with col3:
-        avg_progress = enrollment_df['ProgressPercentage'].mean()
-        st.metric("Avg Progress", f"{avg_progress:.1f}%")
-    
-    with col4:
-        completion_rate = (enrollment_df['CompletionStatus'] == 'Completed').sum() / len(enrollment_df) * 100
-        st.metric("Completion Rate", f"{completion_rate:.1f}%")
-    
-    # Visualizations Row 1
+    # Visualizations
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.subheader("📊 Enrollment by Category")
-        category_counts = enrollment_df['CategoryName'].value_counts()
-        fig_pie = px.pie(
-            values=category_counts.values, 
-            names=category_counts.index,
-            title="Course Enrollments by Category"
-        )
-        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_pie, use_container_width=True)
-    
+        fig = px.pie(enrollment_df, names='CategoryName', title='Enrollments by Category')
+        st.plotly_chart(fig, use_container_width=True)
     with col2:
-        st.subheader("💰 Revenue by Membership Type")
-        revenue_by_membership = enrollment_df.groupby('MembershipType')['CoursePrice'].sum().reset_index()
-        fig_bar = px.bar(
-            revenue_by_membership, 
-            x='MembershipType', 
-            y='CoursePrice',
-            title="Revenue Distribution by Membership",
-            color='MembershipType'
-        )
-        fig_bar.update_layout(showlegend=False)
-        st.plotly_chart(fig_bar, use_container_width=True)
+        fig = px.bar(enrollment_df.groupby('MembershipType')['CoursePrice'].sum().reset_index(), 
+                    x='MembershipType', y='CoursePrice', title='Revenue by Membership Type')
+        st.plotly_chart(fig, use_container_width=True)
     
-    # Visualizations Row 2
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.subheader("📅 Enrollment Trends Over Time")
-        enrollment_df['EnrollmentMonth'] = enrollment_df['EnrollmentDate'].dt.to_period('M')
-        monthly_enrollments = enrollment_df.groupby('EnrollmentMonth').size().reset_index(name='count')
-        monthly_enrollments['EnrollmentMonth'] = monthly_enrollments['EnrollmentMonth'].astype(str)
-        
-        fig_line = px.line(
-            monthly_enrollments, 
-            x='EnrollmentMonth', 
-            y='count',
-            title="Monthly Enrollment Trends",
-            markers=True
-        )
-        st.plotly_chart(fig_line, use_container_width=True)
-    
+        fig = px.histogram(enrollment_df, x='ProgressPercentage', title='Progress Distribution')
+        st.plotly_chart(fig, use_container_width=True)
     with col2:
-        st.subheader("🎯 Course Performance Matrix")
-        course_metrics = enrollment_df.groupby('CourseTitle').agg({
-            'CoursePrice': 'mean',
-            'ProgressPercentage': 'mean',
-            'EnrollmentKey': 'count'
-        }).reset_index()
-        course_metrics.rename(columns={'EnrollmentKey': 'enrollments'}, inplace=True)
-        
-        fig_scatter = px.scatter(
-            course_metrics,
-            x='CoursePrice',
-            y='ProgressPercentage',
-            size='enrollments',
-            hover_data=['CourseTitle'],
-            title="Course Price vs Progress (Size = Enrollments)"
-        )
-        st.plotly_chart(fig_scatter, use_container_width=True)
-    
-    # Completion Analysis
-    st.subheader("✅ Completion Status Analysis")
-    completion_data = enrollment_df['CompletionStatus'].value_counts().reset_index()
-    completion_data.columns = ['Status', 'Count']
-    
-    fig_completion = px.bar(
-        completion_data,
-        x='Status',
-        y='Count',
-        color='Status',
-        title="Distribution of Enrollment Status"
-    )
-    st.plotly_chart(fig_completion, use_container_width=True)
+        fig = px.bar(enrollment_df['CompletionStatus'].value_counts().reset_index(), 
+                    x='CompletionStatus', y='count', title='Completion Status')
+        st.plotly_chart(fig, use_container_width=True)
 
-def performance_dashboard(performance_df):
-    """Performance Dashboard - Educational Quality Assurance"""
-    
-    if len(performance_df) == 0:
-        st.warning("No performance data available for the selected filters.")
-        return
-    
-    st.markdown("<h2 style='color: #ff7f0e;'>🎓 Performance Dashboard - Educational Quality Assurance</h2>", unsafe_allow_html=True)
+def show_performance_dashboard(performance_df):
+    """Tab 3: Performance Dashboard"""
+    st.header("🎓 Performance Dashboard")
     
     # KPI Row
     col1, col2, col3, col4 = st.columns(4)
+    with col1: st.metric("Avg Score", f"{performance_df['ScorePercentage'].mean():.1f}%")
+    with col2: st.metric("Total Submissions", len(performance_df))
+    with col3: st.metric("Avg Time Spent", f"{performance_df['TimeSpentMinutes'].mean():.0f} mins")
+    with col4: st.metric("Success Rate", f"{(performance_df['ScorePercentage'] >= 70).mean()*100:.1f}%")
     
-    with col1:
-        avg_score = performance_df['ScorePercentage'].mean()
-        st.metric("Average Score", f"{avg_score:.1f}%")
-    
-    with col2:
-        total_submissions = len(performance_df)
-        st.metric("Total Submissions", f"{total_submissions:,}")
-    
-    with col3:
-        avg_time = performance_df['TimeSpentMinutes'].mean()
-        st.metric("Avg Time Spent", f"{avg_time:.0f} mins")
-    
-    with col4:
-        success_rate = (performance_df['ScorePercentage'] >= 70).sum() / len(performance_df) * 100
-        st.metric("Success Rate (≥70%)", f"{success_rate:.1f}%")
-    
-    # Visualizations Row 1
+    # Visualizations
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.subheader("📊 Performance by Assessment Type")
-        perf_by_type = performance_df.groupby('AssessmentType')['ScorePercentage'].mean().reset_index()
-        fig_bar = px.bar(
-            perf_by_type,
-            x='AssessmentType',
-            y='ScorePercentage',
-            title="Average Performance by Assessment Type",
-            color='AssessmentType'
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
-    
+        fig = px.box(performance_df, x='AssessmentType', y='ScorePercentage', title='Scores by Assessment Type')
+        st.plotly_chart(fig, use_container_width=True)
     with col2:
-        st.subheader("⏱️ Time vs Performance Analysis")
-        fig_scatter = px.scatter(
-            performance_df,
-            x='TimeSpentMinutes',
-            y='ScorePercentage',
-            color='DifficultyLevel',
-            title="Time Spent vs Score Achieved"
-        )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        fig = px.scatter(performance_df, x='TimeSpentMinutes', y='ScorePercentage', 
+                        color='DifficultyLevel', title='Time vs Score')
+        st.plotly_chart(fig, use_container_width=True)
     
-    # Visualizations Row 2
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.subheader("📈 Score Distribution")
-        fig_hist = px.histogram(
-            performance_df,
-            x='ScorePercentage',
-            nbins=20,
-            title="Score Distribution Across All Assessments"
-        )
-        fig_hist.update_layout(bargap=0.1)
-        st.plotly_chart(fig_hist, use_container_width=True)
-    
+        fig = px.histogram(performance_df, x='ScorePercentage', title='Score Distribution')
+        st.plotly_chart(fig, use_container_width=True)
     with col2:
-        st.subheader("🔄 Attempts vs Difficulty")
-        attempts_difficulty = performance_df.groupby('DifficultyLevel')['AttemptsCount'].mean().reset_index()
-        fig_bar = px.bar(
-            attempts_difficulty,
-            x='DifficultyLevel',
-            y='AttemptsCount',
-            title="Average Attempts by Difficulty Level",
-            color='DifficultyLevel'
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
-    
-    # Difficulty Analysis
-    st.subheader("🎯 Performance by Difficulty Level")
-    difficulty_performance = performance_df.groupby('DifficultyLevel').agg({
-        'ScorePercentage': 'mean',
-        'TimeSpentMinutes': 'mean',
-        'PerformanceKey': 'count'
-        }).reset_index()
-    difficulty_performance.rename(columns={'PerformanceKey': 'count'}, inplace=True)
-    
-    fig_difficulty = px.bar(
-        difficulty_performance,
-        x='DifficultyLevel',
-        y='ScorePercentage',
-        color='DifficultyLevel',
-        title="Average Score by Difficulty Level"
-    )
-    st.plotly_chart(fig_difficulty, use_container_width=True)
+        fig = px.bar(performance_df.groupby('DifficultyLevel')['AttemptsCount'].mean().reset_index(), 
+                    x='DifficultyLevel', y='AttemptsCount', title='Attempts by Difficulty')
+        st.plotly_chart(fig, use_container_width=True)
 
-def integrated_analysis(enrollment_df, performance_df):
-    """Integrated Analysis - Cross-Fact Insights"""
+def show_integrated_analysis(enrollment_df, performance_df):
+    """Tab 4: Integrated Analysis"""
+    st.header("🔗 Integrated Analysis")
     
-    if len(enrollment_df) == 0 or len(performance_df) == 0:
-        st.warning("Not enough data for integrated analysis with current filters.")
-        return
-    
-    st.markdown("<h2 style='color: #2ca02c;'>🔗 Integrated Analysis - Cross-Fact Insights</h2>", unsafe_allow_html=True)
-    
-    # Merge data for integrated analysis
-    integrated_df = pd.merge(
+    # Merge data
+    merged_df = pd.merge(
         enrollment_df[['StudentName', 'CourseTitle', 'MembershipType', 'ProgressPercentage', 'CompletionStatus']],
-        performance_df[['StudentName', 'CourseTitle', 'ScorePercentage', 'AssessmentType']],
+        performance_df.groupby(['StudentName', 'CourseTitle'])['ScorePercentage'].mean().reset_index(),
         on=['StudentName', 'CourseTitle'],
         how='inner'
     )
     
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.subheader("🎯 Enrollment vs Performance Correlation")
-        correlation_data = integrated_df.groupby('MembershipType').agg({
-            'ProgressPercentage': 'mean',
-            'ScorePercentage': 'mean'
-        }).reset_index()
-        
-        fig_correlation = go.Figure()
-        fig_correlation.add_trace(go.Scatter(
-            x=correlation_data['ProgressPercentage'],
-            y=correlation_data['ScorePercentage'],
-            mode='markers+text',
-            text=correlation_data['MembershipType'],
-            textposition='top center',
-            marker=dict(size=15, color=['blue', 'orange', 'green', 'red'])
-        ))
-        fig_correlation.update_layout(
-            title="Course Progress vs Assessment Performance",
-            xaxis_title="Average Progress %",
-            yaxis_title="Average Score %"
-        )
-        st.plotly_chart(fig_correlation, use_container_width=True)
-    
+        fig = px.scatter(merged_df, x='ProgressPercentage', y='ScorePercentage', 
+                        color='MembershipType', title='Progress vs Performance')
+        st.plotly_chart(fig, use_container_width=True)
     with col2:
-        st.subheader("📊 Success Rate by Membership")
-        success_by_membership = integrated_df.groupby('MembershipType').apply(
-            lambda x: (x['ScorePercentage'] >= 70).sum() / len(x) * 100
-        ).reset_index(name='success_rate')
-        
-        fig_success = px.bar(
-            success_by_membership,
-            x='MembershipType',
-            y='success_rate',
-            title="Success Rate by Membership Type",
-            color='MembershipType'
-        )
-        st.plotly_chart(fig_success, use_container_width=True)
-    
-    # Completion vs Performance Analysis
-    st.subheader("📈 Completion Status vs Performance")
-    completion_performance = integrated_df.groupby('CompletionStatus')['ScorePercentage'].mean().reset_index()
-    
-    fig_completion_perf = px.bar(
-        completion_performance,
-        x='CompletionStatus',
-        y='ScorePercentage',
-        color='CompletionStatus',
-        title="Average Score by Completion Status"
-    )
-    st.plotly_chart(fig_completion_perf, use_container_width=True)
+        success_rates = merged_df.groupby('MembershipType').apply(
+            lambda x: (x['ScorePercentage'] >= 70).mean() * 100
+        ).reset_index(name='SuccessRate')
+        fig = px.bar(success_rates, x='MembershipType', y='SuccessRate', title='Success Rate by Membership')
+        st.plotly_chart(fig, use_container_width=True)
 
-# Main Application
 def main():
-    # Load data
-    # Load data
-    if not st.session_state.data_loaded:
-        try:
-            enrollment_df, performance_df = load_data_from_csv()
-        except:
-            st.warning("Using sample data due to loading issues")
-            enrollment_df, performance_df = create_sample_data_from_schema()
-        
-        st.session_state.enrollment_df = enrollment_df
-        st.session_state.performance_df = performance_df
-        st.session_state.data_loaded = True
-    
-    enrollment_df = st.session_state.enrollment_df
-    performance_df = st.session_state.performance_df
-    
-    # Debug info
-    st.sidebar.subheader("🔍 Data Info")
-    st.sidebar.write(f"Enrollments: {len(enrollment_df)}")
-    st.sidebar.write(f"Assessments: {len(performance_df)}")
-    if len(enrollment_df) > 0:
-        st.sidebar.write("Columns:", list(enrollment_df.columns))
-                          
     # Main title
     st.markdown("<h1 class='main-header'>🎓 EduSkillUp Analytics Dashboard</h1>", unsafe_allow_html=True)
     st.markdown("**Fact Constellation Analytics | Business Intelligence & Educational Quality Assurance**")
     
-    # Sidebar filters
-    date_range, categories, membership_types, course_levels, completion_statuses = create_sidebar_filters(enrollment_df, performance_df)
+    # Load data
+    if not st.session_state.data_loaded:
+        with st.spinner("Loading data..."):
+            raw_data = load_raw_data_from_csv()
+            
+            if raw_data:
+                enrollment_df, performance_df = process_data_for_analysis(raw_data)
+                if enrollment_df is None:
+                    st.warning("Using sample data due to processing issues")
+                    enrollment_df, performance_df = create_sample_data()
+            else:
+                st.warning("Using sample data due to loading issues")
+                enrollment_df, performance_df = create_sample_data()
+                raw_data = {}  # Empty raw data for sample case
+            
+            st.session_state.raw_data = raw_data
+            st.session_state.enrollment_df = enrollment_df
+            st.session_state.performance_df = performance_df
+            st.session_state.data_loaded = True
     
-    # Apply filters
-    filtered_enrollment = filter_data(
-        enrollment_df, 'EnrollmentDate', date_range, categories, 
-        membership_types, course_levels, completion_statuses
-    )
-    filtered_performance = filter_data(performance_df, 'SubmissionDate', date_range, categories)
+    raw_data = st.session_state.raw_data
+    enrollment_df = st.session_state.enrollment_df
+    performance_df = st.session_state.performance_df
     
-    # Navigation tabs
-    tab1, tab2, tab3 = st.tabs(["📈 Enrollment Dashboard", "🎓 Performance Dashboard", "🔗 Integrated Analysis"])
-    
-    with tab1:
-        enrollment_dashboard(filtered_enrollment)
-    
-    with tab2:
-        performance_dashboard(filtered_performance)
-    
-    with tab3:
-        integrated_analysis(filtered_enrollment, filtered_performance)
-    
-    # Data summary
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("📊 Data Summary")
+    # Data summary in sidebar
+    st.sidebar.header("📊 Data Summary")
     st.sidebar.info(f"""
     - 📚 Enrollments: {len(enrollment_df):,}
     - 🎯 Assessments: {len(performance_df):,}
@@ -652,6 +436,33 @@ def main():
     - 🏫 Courses: {enrollment_df['CourseTitle'].nunique():,}
     - 📈 Categories: {enrollment_df['CategoryName'].nunique():,}
     """)
+    
+    # Create filters
+    date_range, categories, membership_types = create_sidebar_filters(enrollment_df, performance_df)
+    
+    # Apply filters
+    filtered_enrollment = filter_data(enrollment_df, 'EnrollmentDate', date_range, categories, membership_types)
+    filtered_performance = filter_data(performance_df, 'SubmissionDate', date_range, categories, membership_types)
+    
+    # Navigation tabs
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🔍 Data Explorer", 
+        "📈 Enrollment Dashboard", 
+        "🎓 Performance Dashboard", 
+        "🔗 Integrated Analysis"
+    ])
+    
+    with tab1:
+        show_data_explorer_tab(raw_data, filtered_enrollment, filtered_performance)
+    
+    with tab2:
+        show_enrollment_dashboard(filtered_enrollment)
+    
+    with tab3:
+        show_performance_dashboard(filtered_performance)
+    
+    with tab4:
+        show_integrated_analysis(filtered_enrollment, filtered_performance)
     
     # Footer
     st.markdown("---")
