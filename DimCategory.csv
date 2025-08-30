@@ -1,0 +1,11 @@
+CategoryKey,CategoryID,CategoryName,Description,IsActive
+1,1001,Data Science,"Data analysis, machine learning, and statistical modeling",True
+2,1002,Web Development,Frontend and backend web development technologies,True
+3,1003,Mobile Development,iOS and Android app development courses,True
+4,1004,Cloud Computing,"AWS, Azure, and Google Cloud platform training",True
+5,1005,Cybersecurity,Information security and ethical hacking courses,True
+6,1006,AI & Machine Learning,Artificial intelligence and deep learning,True
+7,1007,DevOps,"CI/CD, deployment, and infrastructure automation",True
+8,1008,Digital Marketing,"SEO, social media marketing, and digital advertising",True
+9,1009,Business Analytics,Business intelligence and data-driven decisions,True
+10,1010,Project Management,"Agile, Scrum, and project management methodologies",True

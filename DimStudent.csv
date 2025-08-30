@@ -1,0 +1,51 @@
+StudentKey,StudentID,StudentName,MembershipType,LearningGoals,RegistrationDate,TotalCoursesCompleted,IsActive
+1,4001,Erin Hudson,Premium,Skill advancement in current role,11-07-2025,4,TRUE
+2,4002,Amber Roberts,Basic,Remote work preparation,02-08-2025,1,FALSE
+3,4003,Ashley Allen,Standard,Personal development,30-12-2024,5,TRUE
+4,4004,Scott Henderson,Standard,Freelancing opportunities,31-03-2025,3,TRUE
+5,4005,Andrew Avila,Premium,Start own business,18-10-2024,1,TRUE
+6,4006,Allen Collins Jr.,Premium,Start own business,30-12-2024,3,TRUE
+7,4007,Amanda Sanchez,Standard,Personal development,19-08-2025,4,TRUE
+8,4008,Raymond Zuniga,Premium,Freelancing opportunities,13-11-2024,0,TRUE
+9,4009,Gina Walters,Basic,Remote work preparation,24-11-2024,5,FALSE
+10,4010,Jenny Lewis,Standard,Career transition to tech,15-07-2025,3,TRUE
+11,4011,Daisy Rogers,Basic,Start own business,16-04-2025,7,FALSE
+12,4012,Karina Jennings,Premium,Personal development,26-01-2025,2,TRUE
+13,4013,David Hart,Basic,Skill advancement in current role,12-07-2025,8,TRUE
+14,4014,Miranda Jefferson,Premium,Certification preparation,31-07-2025,6,FALSE
+15,4015,Emma Kelley,Standard,Skill advancement in current role,06-05-2025,2,FALSE
+16,4016,Lisa Serrano,Basic,Remote work preparation,18-02-2025,0,TRUE
+17,4017,Charles Brown,Basic,Start own business,21-10-2024,2,FALSE
+18,4018,Brittany Rodriguez,Premium,Career transition to tech,29-10-2024,6,FALSE
+19,4019,Katrina Lee,Premium,Personal development,27-08-2025,8,TRUE
+20,4020,Brenda Bennett,Premium,Remote work preparation,16-03-2025,0,TRUE
+21,4021,Erica Short,Premium,Certification preparation,30-05-2025,4,TRUE
+22,4022,Joseph Barton,Basic,Freelancing opportunities,28-01-2025,6,TRUE
+23,4023,Allison Hall,Standard,Career transition to tech,13-08-2025,4,TRUE
+24,4024,Jeffrey Smith,Premium,Career transition to tech,17-04-2025,4,TRUE
+25,4025,Bonnie Williams,Basic,Freelancing opportunities,20-05-2025,2,TRUE
+26,4026,Patricia Salas,Premium,Freelancing opportunities,03-10-2024,7,TRUE
+27,4027,Justin Davis,Basic,Freelancing opportunities,16-01-2025,4,TRUE
+28,4028,Walter Jones,Basic,Skill advancement in current role,16-03-2025,1,TRUE
+29,4029,Robert Miller,Premium,Personal development,24-04-2025,1,TRUE
+30,4030,Jane Gonzalez,Basic,Start own business,20-04-2025,7,TRUE
+31,4031,Melissa Kelly,Standard,Certification preparation,25-11-2024,6,TRUE
+32,4032,Jesus Barton,Premium,Remote work preparation,23-11-2024,3,TRUE
+33,4033,Renee Tate,Standard,Start own business,14-08-2025,5,FALSE
+34,4034,Lindsey Griffin,Premium,Personal development,24-10-2024,1,TRUE
+35,4035,Russell Salazar,Basic,Career transition to tech,08-09-2024,5,TRUE
+36,4036,David Goodman,Premium,Certification preparation,25-11-2024,3,TRUE
+37,4037,Michael Murray,Basic,Career transition to tech,15-03-2025,0,TRUE
+38,4038,Dr. Melissa Clayton,Basic,Career transition to tech,23-08-2025,5,TRUE
+39,4039,Kimberly Moss,Premium,Skill advancement in current role,29-08-2024,4,FALSE
+40,4040,Alicia Guerrero,Basic,Certification preparation,15-02-2025,2,FALSE
+41,4041,Kristy Hale,Basic,Remote work preparation,27-06-2025,7,FALSE
+42,4042,Julie Ross,Basic,Career transition to tech,13-12-2024,1,FALSE
+43,4043,Katherine Ross,Standard,Personal development,18-11-2024,6,FALSE
+44,4044,Matthew Garner DDS,Premium,Career transition to tech,05-07-2025,1,TRUE
+45,4045,Christopher Oconnell,Standard,Start own business,11-12-2024,5,TRUE
+46,4046,Marcus Miles,Basic,Skill advancement in current role,18-04-2025,3,FALSE
+47,4047,Shannon Gonzalez,Basic,Personal development,14-03-2025,2,TRUE
+48,4048,Scott Fleming,Standard,Skill advancement in current role,16-02-2025,1,FALSE
+49,4049,Heather Navarro,Premium,Career transition to tech,27-07-2025,0,TRUE
+50,4050,Daniel Mitchell,Basic,Remote work preparation,16-02-2025,3,TRUE

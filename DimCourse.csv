@@ -1,0 +1,16 @@
+CourseKey,CourseID,CourseTitle,Level,Duration,MaxEnrollment,Status,CreatedDate
+1,3001,Python for Data Science Fundamentals,Beginner,60,106,Inactive,2024-02-22
+2,3002,Advanced Machine Learning with TensorFlow,Advanced,90,200,Active,2025-04-17
+3,3003,Full-Stack Web Development Bootcamp,Intermediate,120,51,Active,2023-10-25
+4,3004,React.js Complete Guide,Intermediate,45,158,Active,2025-01-11
+5,3005,iOS App Development with Swift,Beginner,75,121,Active,2025-02-25
+6,3006,Android Development with Kotlin,Beginner,70,105,Active,2025-07-22
+7,3007,AWS Cloud Practitioner Certification,Beginner,30,76,Active,2025-07-03
+8,3008,Advanced AWS Solutions Architecture,Advanced,100,147,Active,2024-12-30
+9,3009,Ethical Hacking and Penetration Testing,Intermediate,80,141,Active,2023-12-12
+10,3010,Deep Learning for Computer Vision,Advanced,85,117,Active,2023-12-26
+11,3011,DevOps Engineering Fundamentals,Intermediate,95,167,Active,2025-08-13
+12,3012,Digital Marketing Mastery,Beginner,40,146,Active,2025-08-13
+13,3013,Business Intelligence with Tableau,Intermediate,50,191,Active,2025-01-04
+14,3014,Agile Project Management Professional,Intermediate,35,142,Active,2024-11-04
+15,3015,Advanced Data Visualization,Advanced,55,67,Active,2024-10-23

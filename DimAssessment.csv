@@ -1,0 +1,31 @@
+AssessmentKey,AssessmentID,AssessmentTitle,AssessmentType,DifficultyLevel,TimeLimit,WeightagePercent,MaxScore,IsActive
+1,5001,Optimized directional core Exam,Exam,Intermediate,175,28.95,149,True
+2,5002,Stand-alone empowering leverage Exam,Exam,Intermediate,151,19.49,105,True
+3,5003,Upgradable tangible structure Lab,Lab,Advanced,145,33.84,185,True
+4,5004,Sharable optimizing support Quiz,Quiz,Advanced,20,53.09,153,True
+5,5005,Universal intangible open system Lab,Lab,Beginner,334,39.18,183,True
+6,5006,Adaptive bi-directional functionalities Project,Project,Beginner,2417,43.58,126,False
+7,5007,Organic stable standardization Project,Project,Beginner,3984,36.88,179,True
+8,5008,Ergonomic client-driven benchmark Assignment,Assignment,Intermediate,740,51.69,127,True
+9,5009,Grass-roots holistic flexibility Simulation,Simulation,Advanced,1391,15.35,191,True
+10,5010,Focused zero-defect focus group Project,Project,Intermediate,2844,52.65,179,False
+11,5011,Right-sized local support Project,Project,Beginner,2573,48.56,117,True
+12,5012,Streamlined contextually-based budgetary management Simulation,Simulation,Intermediate,557,57.25,88,True
+13,5013,Reactive disintermediate definition Project,Project,Advanced,3200,28.23,60,True
+14,5014,Optional scalable data-warehouse Assignment,Assignment,Advanced,450,53.74,89,True
+15,5015,Fully-configurable motivating orchestration Assignment,Assignment,Beginner,290,56.54,113,True
+16,5016,Fundamental mission-critical access Assignment,Assignment,Advanced,1023,19.98,167,True
+17,5017,Fundamental high-level capability Project,Project,Beginner,4143,23.93,67,True
+18,5018,Polarized zero tolerance contingency Project,Project,Advanced,4223,56.96,79,True
+19,5019,Versatile human-resource customer loyalty Assignment,Assignment,Advanced,318,46.43,130,False
+20,5020,Sharable zero administration frame Lab,Lab,Advanced,250,45.44,50,True
+21,5021,Automated reciprocal neural-net Project,Project,Intermediate,3992,16.23,126,True
+22,5022,Visionary empowering encoding Simulation,Simulation,Intermediate,610,19.59,147,True
+23,5023,Profit-focused multimedia knowledge user Lab,Lab,Advanced,120,24.35,160,True
+24,5024,Exclusive optimal intranet Exam,Exam,Intermediate,120,14.24,181,True
+25,5025,Public-key stable core Quiz,Quiz,Beginner,58,11.22,112,False
+26,5026,Public-key explicit data-warehouse Lab,Lab,Beginner,219,44.82,176,False
+27,5027,Customer-focused reciprocal focus group Assignment,Assignment,Beginner,251,18.79,182,False
+28,5028,Virtual optimal architecture Quiz,Quiz,Advanced,30,36.56,193,True
+29,5029,Reverse-engineered tangible structure Exam,Exam,Advanced,117,53.07,165,True
+30,5030,Open-architected intermediate moderator Assignment,Assignment,Advanced,1307,31.99,123,True

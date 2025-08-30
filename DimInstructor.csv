@@ -1,0 +1,11 @@
+InstructorKey,InstructorID,InstructorName,Expertise,YearsExperience,Rating,TotalStudents,IsVerified
+1,2001,Dr. Sarah Chen,"Data Science, Machine Learning, Python",8,4.85,428,True
+2,2002,Michael Rodriguez,"Full-Stack Development, JavaScript, React",6,4.72,763,True
+3,2003,Jennifer Kim,"iOS Development, Swift, Mobile UI/UX",5,4.68,657,True
+4,2004,David Thompson,"AWS Cloud Architecture, DevOps, IaC",10,4.91,409,True
+5,2005,Lisa Wang,"Cybersecurity, Ethical Hacking, Network Security",7,4.79,1409,False
+6,2006,Robert Johnson,"Deep Learning, Computer Vision, TensorFlow",9,4.88,265,True
+7,2007,Maria Garcia,"Digital Marketing, SEO, Google Analytics",4,4.65,391,True
+8,2008,James Wilson,"Business Intelligence, Tableau, SQL",6,4.74,676,True
+9,2009,Amanda Taylor,"Agile Project Management, Scrum, Leadership",8,4.82,1349,True
+10,2010,Kevin Brown,"Android Development, Kotlin, Firebase",5,4.7,1316,False
