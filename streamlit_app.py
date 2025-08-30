@@ -269,15 +269,10 @@ def create_sidebar_filters(enrollment_df, performance_df):
     return date_range, categories, membership_types
 
 def filter_data(df, date_col, date_range, categories=None, membership_types=None):
-    """Apply filters to dataframe"""
+    """Apply filters to dataframe - simplified version"""
     filtered_df = df.copy()
     
-    # Date filter
-    filtered_df = filtered_df[
-        (filtered_df[date_col] >= pd.Timestamp(date_range[0])) & 
-        (filtered_df[date_col] <= pd.Timestamp(date_range[1]))
-    ]
-    
+    # TEMPORARY: Skip date filtering to see if that's the issue
     # Category filter
     if categories and 'CategoryName' in filtered_df.columns:
         filtered_df = filtered_df[filtered_df['CategoryName'].isin(categories)]
