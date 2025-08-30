@@ -421,7 +421,7 @@ def show_schema_diagram():
     
     # Try to load the image
     try:
-        st.image("fact_constellation.png", use_container_width=True)
+        st.image("Fact constellation diagram.png", use_container_width=True)
     except:
         st.error("Could not load fact_constellation.png. Please make sure the file exists in the same directory.")
 
