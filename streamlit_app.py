@@ -217,9 +217,21 @@ def create_sidebar_filters(enrollment_df, performance_df):
     """Create sidebar filters"""
     st.sidebar.header("📊 Dashboard Filters")
     
-    # Date range filter
-    min_date = enrollment_df['EnrollmentDate'].min()
-    max_date = enrollment_df['EnrollmentDate'].max()
+    # Handle date range safely
+    try:
+        # Filter out NaT values and get valid dates
+        valid_dates = enrollment_df['EnrollmentDate'].dropna()
+        if len(valid_dates) > 0:
+            min_date = valid_dates.min()
+            max_date = valid_dates.max()
+        else:
+            # Fallback dates if no valid dates found
+            min_date = pd.to_datetime('2024-08-29')
+            max_date = pd.to_datetime('2024-08-29')
+    except:
+        # Fallback if any error occurs
+        min_date = pd.to_datetime('2024-08-29')
+        max_date = pd.to_datetime('2024-08-29')
     
     date_range = st.sidebar.date_input(
         "Select Date Range",
@@ -231,17 +243,27 @@ def create_sidebar_filters(enrollment_df, performance_df):
     if len(date_range) == 1:
         date_range = (date_range[0], date_range[0])
     
-    # Other filters
+    # Other filters with safe defaults
+    try:
+        categories_options = enrollment_df['CategoryName'].unique()
+    except:
+        categories_options = []
+    
+    try:
+        membership_options = enrollment_df['MembershipType'].unique()
+    except:
+        membership_options = []
+    
     categories = st.sidebar.multiselect(
         "Select Categories",
-        options=enrollment_df['CategoryName'].unique(),
-        default=enrollment_df['CategoryName'].unique()
+        options=categories_options,
+        default=categories_options if len(categories_options) > 0 else []
     )
     
     membership_types = st.sidebar.multiselect(
         "Select Membership Types",
-        options=enrollment_df['MembershipType'].unique(),
-        default=enrollment_df['MembershipType'].unique()
+        options=membership_options,
+        default=membership_options if len(membership_options) > 0 else []
     )
     
     return date_range, categories, membership_types
