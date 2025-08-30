@@ -418,25 +418,28 @@ def main():
                 enrollment_df, performance_df = create_sample_data()
                 raw_data = {}  # Empty raw data for sample case
             
+            # Initialize all session state variables
             st.session_state.raw_data = raw_data
             st.session_state.enrollment_df = enrollment_df
             st.session_state.performance_df = performance_df
             st.session_state.data_loaded = True
     
-    raw_data = st.session_state.raw_data
-    enrollment_df = st.session_state.enrollment_df
-    performance_df = st.session_state.performance_df
+    # Safe access to session state variables with default values
+    raw_data = st.session_state.get('raw_data', {})
+    enrollment_df = st.session_state.get('enrollment_df', pd.DataFrame())
+    performance_df = st.session_state.get('performance_df', pd.DataFrame())
     
     # Data summary in sidebar
     st.sidebar.header("📊 Data Summary")
     st.sidebar.info(f"""
     - 📚 Enrollments: {len(enrollment_df):,}
     - 🎯 Assessments: {len(performance_df):,}
-    - 👥 Students: {enrollment_df['StudentName'].nunique():,}
-    - 🏫 Courses: {enrollment_df['CourseTitle'].nunique():,}
-    - 📈 Categories: {enrollment_df['CategoryName'].nunique():,}
+    - 👥 Students: {enrollment_df['StudentName'].nunique() if not enrollment_df.empty else 0:,}
+    - 🏫 Courses: {enrollment_df['CourseTitle'].nunique() if not enrollment_df.empty else 0:,}
+    - 📈 Categories: {enrollment_df['CategoryName'].nunique() if not enrollment_df.empty else 0:,}
     """)
     
+    # Rest of your main function remains the same...    
     # Create filters
     date_range, categories, membership_types = create_sidebar_filters(enrollment_df, performance_df)
     
