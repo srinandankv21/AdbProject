@@ -58,83 +58,82 @@ def get_file_path(filename):
 
 @st.cache_data
 def load_data_from_csv():
-    """Load data from CSV files matching your fact constellation schema"""
+    """Load data from CSV files with better error handling"""
     
     try:
-        # Load dimension tables
-        dim_student = pd.read_csv(get_file_path('DimStudent.csv'), parse_dates=['RegistrationDate'], dayfirst=True)
-        dim_date = pd.read_csv(get_file_path('DimDate.csv'), parse_dates=['FullDate'], dayfirst=True)
-        dim_assessment = pd.read_csv(get_file_path('DimAssessment.csv'))
-        dim_category = pd.read_csv(get_file_path('DimCategory.csv'))
-        dim_course = pd.read_csv(get_file_path('DimCourse.csv'), parse_dates=['CreatedDate'], dayfirst=True)
-        dim_instructor = pd.read_csv(get_file_path('DimInstructor.csv'))
+        # First, let's check what files are actually available
+        import os
+        available_files = [f for f in os.listdir('.') if f.endswith('.csv')]
+        st.sidebar.info(f"Available CSV files: {available_files}")
         
-        # Load fact tables
-        fact_enrollment = pd.read_csv(get_file_path('FactEnrollment.csv'))
-        fact_performance = pd.read_csv(get_file_path('FactAssessmentPerformance.csv'))
+        # Try to load each file with multiple path options
+        csv_files = {
+            'DimStudent.csv': None,
+            'DimDate.csv': None, 
+            'DimAssessment.csv': None,
+            'DimCategory.csv': None,
+            'DimCourse.csv': None,
+            'DimInstructor.csv': None,
+            'FactEnrollment.csv': None,
+            'FactAssessmentPerformance.csv': None
+        }
         
-        # Debug: Show loaded data info
-        st.sidebar.success(f"✅ Loaded {len(dim_student)} students, {len(dim_course)} courses")
+        # Try to load each file
+        for file_name in csv_files.keys():
+            try:
+                if file_name in available_files:
+                    if file_name in ['DimStudent.csv', 'DimDate.csv', 'DimCourse.csv']:
+                        csv_files[file_name] = pd.read_csv(file_name, parse_dates=True, dayfirst=True, infer_datetime_format=True)
+                    else:
+                        csv_files[file_name] = pd.read_csv(file_name)
+                    st.sidebar.success(f"✅ Loaded {file_name}")
+                else:
+                    st.sidebar.warning(f"❌ {file_name} not found")
+            except Exception as e:
+                st.sidebar.error(f"Error loading {file_name}: {str(e)}")
         
-        # Merge enrollment data with dimensions
-        enrollment_df = fact_enrollment.merge(
-            dim_student[['StudentKey', 'StudentName', 'MembershipType']], 
-            on='StudentKey'
-        ).merge(
-            dim_course[['CourseKey', 'CourseTitle', 'Level']], 
-            on='CourseKey'
-        ).merge(
-            dim_instructor[['InstructorKey', 'InstructorName']], 
-            on='InstructorKey'
-        ).merge(
-            dim_category[['CategoryKey', 'CategoryName']], 
-            on='CategoryKey'
-        ).merge(
-            dim_date[['DateKey', 'FullDate']].rename(columns={'FullDate': 'EnrollmentDate'}),
-            left_on='EnrollmentDateKey', right_on='DateKey'
-        ).merge(
-            dim_date[['DateKey', 'FullDate']].rename(columns={'FullDate': 'CompletionDate'}),
-            left_on='CompletionDateKey', right_on='DateKey', how='left'
-        )
+        # Check if we have the essential files
+        if csv_files['DimStudent.csv'] is None or csv_files['FactEnrollment.csv'] is None:
+            st.error("Essential files missing. Using sample data.")
+            return load_sample_data()
         
-        # Merge performance data with dimensions
-        performance_df = fact_performance.merge(
-            dim_student[['StudentKey', 'StudentName']], 
-            on='StudentKey'
-        ).merge(
-            dim_course[['CourseKey', 'CourseTitle']], 
-            on='CourseKey'
-        ).merge(
-            dim_assessment[['AssessmentKey', 'AssessmentTitle', 'AssessmentType', 'DifficultyLevel', 'MaxScore']], 
-            on='AssessmentKey'
-        ).merge(
-            dim_date[['DateKey', 'FullDate']].rename(columns={'FullDate': 'SubmissionDate'}),
-            left_on='SubmissionDateKey', right_on='DateKey'
-        )
+        # Let's see what columns we actually have
+        st.sidebar.write("DimStudent columns:", list(csv_files['DimStudent.csv'].columns))
+        st.sidebar.write("FactEnrollment columns:", list(csv_files['FactEnrollment.csv'].columns))
         
-        # Calculate additional fields
+        # For now, let's just work with basic data without complex joins
+        enrollment_df = csv_files['FactEnrollment.csv'].copy()
+        performance_df = csv_files['FactAssessmentPerformance.csv'].copy()
+        
+        # Add basic student info if available
+        if csv_files['DimStudent.csv'] is not None:
+            student_map = csv_files['DimStudent.csv'][['StudentKey', 'StudentName', 'MembershipType']]
+            enrollment_df = enrollment_df.merge(student_map, on='StudentKey', how='left')
+        
+        if csv_files['DimCourse.csv'] is not None:
+            course_map = csv_files['DimCourse.csv'][['CourseKey', 'CourseTitle', 'Level']]
+            enrollment_df = enrollment_df.merge(course_map, on='CourseKey', how='left')
+            performance_df = performance_df.merge(course_map, on='CourseKey', how='left')
+        
+        # Simple date handling - convert DateKey to datetime
+        try:
+            enrollment_df['EnrollmentDate'] = pd.to_datetime(enrollment_df['EnrollmentDateKey'].astype(str), format='%Y%m%d')
+            enrollment_df['CompletionDate'] = pd.to_datetime(enrollment_df['CompletionDateKey'].astype(str), format='%Y%m%d', errors='coerce')
+            performance_df['SubmissionDate'] = pd.to_datetime(performance_df['SubmissionDateKey'].astype(str), format='%Y%m%d')
+        except:
+            st.sidebar.warning("Could not convert date keys. Using sample dates.")
+            enrollment_df['EnrollmentDate'] = pd.date_range('2024-08-29', periods=len(enrollment_df))
+            performance_df['SubmissionDate'] = pd.date_range('2024-08-29', periods=len(performance_df))
+        
+        # Calculate score percentage
         performance_df['ScorePercentage'] = (performance_df['ScoreEarned'] / performance_df['MaxPossibleScore']) * 100
         
-        # Select relevant columns for the dashboard
-        enrollment_df = enrollment_df[[
-            'EnrollmentKey', 'StudentName', 'CourseTitle', 'CategoryName', 'InstructorName',
-            'MembershipType', 'EnrollmentDate', 'CompletionDate', 'CoursePrice', 
-            'ProgressPercentage', 'DaysToComplete', 'CompletionStatus', 'PaymentStatus', 'Level'
-        ]].rename(columns={'Level': 'CourseLevel'})
-        
-        performance_df = performance_df[[
-            'PerformanceKey', 'StudentName', 'CourseTitle', 'AssessmentTitle', 
-            'AssessmentType', 'DifficultyLevel', 'ScoreEarned', 'MaxPossibleScore',
-            'ScorePercentage', 'TimeSpentMinutes', 'AttemptsCount', 'SubmissionDate', 'IsCompleted'
-        ]].rename(columns={'MaxPossibleScore': 'MaxScore'})
-        
+        st.sidebar.success(f"✅ Successfully loaded {len(enrollment_df)} enrollments and {len(performance_df)} assessments")
         return enrollment_df, performance_df
         
     except Exception as e:
-        st.error(f"Error loading data: {str(e)}")
-        st.info("Using sample data instead. Please ensure CSV files are in the same directory.")
+        st.error(f"Critical error loading data: {str(e)}")
         return load_sample_data()
-
 @st.cache_data
 def load_sample_data():
     """Fallback sample data if CSV loading fails"""
@@ -595,8 +594,14 @@ def integrated_analysis(enrollment_df, performance_df):
 # Main Application
 def main():
     # Load data
+    # Load data
     if not st.session_state.data_loaded:
-        enrollment_df, performance_df = load_data_from_csv()
+        try:
+            enrollment_df, performance_df = load_data_from_csv()
+        except:
+            st.warning("Using sample data due to loading issues")
+            enrollment_df, performance_df = create_sample_data_from_schema()
+        
         st.session_state.enrollment_df = enrollment_df
         st.session_state.performance_df = performance_df
         st.session_state.data_loaded = True
@@ -604,6 +609,13 @@ def main():
     enrollment_df = st.session_state.enrollment_df
     performance_df = st.session_state.performance_df
     
+    # Debug info
+    st.sidebar.subheader("🔍 Data Info")
+    st.sidebar.write(f"Enrollments: {len(enrollment_df)}")
+    st.sidebar.write(f"Assessments: {len(performance_df)}")
+    if len(enrollment_df) > 0:
+        st.sidebar.write("Columns:", list(enrollment_df.columns)
+                          
     # Main title
     st.markdown("<h1 class='main-header'>🎓 EduSkillUp Analytics Dashboard</h1>", unsafe_allow_html=True)
     st.markdown("**Fact Constellation Analytics | Business Intelligence & Educational Quality Assurance**")
