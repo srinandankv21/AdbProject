@@ -614,7 +614,7 @@ def main():
     st.sidebar.write(f"Enrollments: {len(enrollment_df)}")
     st.sidebar.write(f"Assessments: {len(performance_df)}")
     if len(enrollment_df) > 0:
-        st.sidebar.write("Columns:", list(enrollment_df.columns)
+        st.sidebar.write("Columns:", list(enrollment_df.columns))
                           
     # Main title
     st.markdown("<h1 class='main-header'>🎓 EduSkillUp Analytics Dashboard</h1>", unsafe_allow_html=True)
