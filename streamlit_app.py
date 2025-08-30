@@ -180,16 +180,17 @@ def create_sidebar_filters(enrollment_df, performance_df):
     
     st.sidebar.header("📊 Dashboard Filters")
     
-    # Extract date from EnrollmentDateKey (20250829 format)
-    if len(enrollment_df) > 0 and 'EnrollmentDate' in enrollment_df.columns:
-        # Convert to proper datetime
-        enrollment_dates = pd.to_datetime(enrollment_df['EnrollmentDate'])
-        min_date = enrollment_dates.min()
-        max_date = enrollment_dates.max()
-        
+    # Debug: Check if we have data
+    if len(enrollment_df) == 0:
+        st.sidebar.warning("No enrollment data loaded")
+        return (pd.Timestamp('2024-08-29'), pd.Timestamp('2024-08-29')), [], [], [], []
+    
+    # Extract date from data
+    try:
+        min_date = enrollment_df['EnrollmentDate'].min()
+        max_date = enrollment_df['EnrollmentDate'].max()
         st.sidebar.info(f"📅 Data range: {min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}")
-    else:
-        # Fallback: your data is from August 29, 2024
+    except:
         min_date = pd.to_datetime('2024-08-29')
         max_date = pd.to_datetime('2024-08-29')
         st.sidebar.info("📅 Your data is from: August 29, 2024")
@@ -207,59 +208,116 @@ def create_sidebar_filters(enrollment_df, performance_df):
     elif len(date_range) == 0:
         date_range = (min_date, max_date)
     
-    # Rest of the filters...
-    categories = st.sidebar.multiselect(
-        "Select Categories",
-        options=enrollment_df['CategoryName'].unique(),
-        default=enrollment_df['CategoryName'].unique()
-    )
+    # Get unique values for filters (with fallbacks)
+    try:
+        categories = enrollment_df['CategoryName'].unique().tolist()
+    except:
+        categories = []
     
-    membership_types = st.sidebar.multiselect(
-        "Select Membership Types",
-        options=enrollment_df['MembershipType'].unique(),
-        default=enrollment_df['MembershipType'].unique()
-    )
+    try:
+        membership_types = enrollment_df['MembershipType'].unique().tolist()
+    except:
+        membership_types = []
     
-    course_levels = st.sidebar.multiselect(
-        "Select Course Levels",
-        options=enrollment_df['CourseLevel'].unique(),
-        default=enrollment_df['CourseLevel'].unique()
-    )
+    try:
+        course_levels = enrollment_df['CourseLevel'].unique().tolist()
+    except:
+        course_levels = []
     
-    completion_statuses = st.sidebar.multiselect(
-        "Select Completion Status",
-        options=enrollment_df['CompletionStatus'].unique(),
-        default=enrollment_df['CompletionStatus'].unique()
-    )
+    try:
+        completion_statuses = enrollment_df['CompletionStatus'].unique().tolist()
+    except:
+        completion_statuses = []
     
-    return date_range, categories, membership_types, course_levels, completion_statuses
+    # Create filters only if we have options
+    if categories:
+        selected_categories = st.sidebar.multiselect(
+            "Select Categories",
+            options=categories,
+            default=categories
+        )
+    else:
+        selected_categories = []
+        st.sidebar.warning("No categories available")
+    
+    if membership_types:
+        selected_membership_types = st.sidebar.multiselect(
+            "Select Membership Types",
+            options=membership_types,
+            default=membership_types
+        )
+    else:
+        selected_membership_types = []
+        st.sidebar.warning("No membership types available")
+    
+    if course_levels:
+        selected_course_levels = st.sidebar.multiselect(
+            "Select Course Levels",
+            options=course_levels,
+            default=course_levels
+        )
+    else:
+        selected_course_levels = []
+        st.sidebar.warning("No course levels available")
+    
+    if completion_statuses:
+        selected_completion_statuses = st.sidebar.multiselect(
+            "Select Completion Status",
+            options=completion_statuses,
+            default=completion_statuses
+        )
+    else:
+        selected_completion_statuses = []
+        st.sidebar.warning("No completion statuses available")
+    
+    return date_range, selected_categories, selected_membership_types, selected_course_levels, selected_completion_statuses
 def filter_data(df, date_col, date_range, categories, membership_types=None, course_levels=None, completion_statuses=None):
     """Apply filters to dataframe"""
     
+    if len(df) == 0:
+        return df
+    
+    # Start with original dataframe
+    filtered_df = df.copy()
+    
     # Date filter
-    filtered_df = df[
-        (df[date_col] >= pd.Timestamp(date_range[0])) & 
-        (df[date_col] <= pd.Timestamp(date_range[1]))
-    ]
+    try:
+        filtered_df = filtered_df[
+            (filtered_df[date_col] >= pd.Timestamp(date_range[0])) & 
+            (filtered_df[date_col] <= pd.Timestamp(date_range[1]))
+        ]
+    except:
+        pass  # Skip date filtering if it fails
     
     # Category filter
-    if 'CategoryName' in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df['CategoryName'].isin(categories)]
+    if categories and 'CategoryName' in filtered_df.columns:
+        try:
+            filtered_df = filtered_df[filtered_df['CategoryName'].isin(categories)]
+        except:
+            pass
     
     # Membership filter
     if membership_types and 'MembershipType' in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df['MembershipType'].isin(membership_types)]
+        try:
+            filtered_df = filtered_df[filtered_df['MembershipType'].isin(membership_types)]
+        except:
+            pass
     
     # Course level filter
     if course_levels and 'CourseLevel' in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df['CourseLevel'].isin(course_levels)]
+        try:
+            filtered_df = filtered_df[filtered_df['CourseLevel'].isin(course_levels)]
+        except:
+            pass
     
     # Completion status filter
     if completion_statuses and 'CompletionStatus' in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df['CompletionStatus'].isin(completion_statuses)]
+        try:
+            filtered_df = filtered_df[filtered_df['CompletionStatus'].isin(completion_statuses)]
+        except:
+            pass
     
     return filtered_df
-
 def enrollment_dashboard(enrollment_df):
     """Enrollment Dashboard - Strategic Business Intelligence"""
     
