@@ -414,9 +414,9 @@ def show_integrated_analysis(enrollment_df, performance_df):
                         color='MembershipType', title='Progress vs Performance')
         st.plotly_chart(fig, use_container_width=True)
     with col2:
-        success_rates = merged_df.groupby('MembershipType').apply(
-            lambda x: (x['ScorePercentage'] >= 70).mean() * 100
-        ).reset_index(name='SuccessRate')
+        success_rates = merged_df.groupby('MembershipType').agg(
+            SuccessRate=('ScorePercentage', lambda x: (x >= 70).mean() * 100)
+            ).reset_index()
         fig = px.bar(success_rates, x='MembershipType', y='SuccessRate', title='Success Rate by Membership')
         st.plotly_chart(fig, use_container_width=True)
 
